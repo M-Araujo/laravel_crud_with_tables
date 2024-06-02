@@ -19,6 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'picture',
         'password',
     ];
 
@@ -43,5 +44,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getPictureAttribute($value): string
+    {
+        if ($value) {
+            return \Config::get('app.url') . '/' . $value;
+
+        } else {
+            return asset('images/avatar.png');
+        }
     }
 }

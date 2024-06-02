@@ -1,0 +1,10 @@
+.invalid {
+    border-color: darkred;
+    background-color: hsl(0, 30%, 95%);
+    margin-bottom: 0em;
+}
+
+.error-message {
+    margin-bottom: 1em;
+    color: hsl(0deg, 100%, 15%);
+}
