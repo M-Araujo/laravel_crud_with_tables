@@ -15,5 +15,9 @@ class UserController extends Controller
         return view('users.list')->with(compact('items'));
     }
 
-
+    public function edit($id)
+    {
+        $item = User::find($id);
+        return view('users.edit')->with(compact('item'));
+    }
 }
