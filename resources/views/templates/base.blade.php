@@ -61,19 +61,21 @@
 
         table.on('click', '.delete_btn', function () {
 
-            var url = $(this).attr('data-href');
+            let url = $(this).attr('data-href');
+            console.log(url);
+
             Swal.fire({
-                title: "{{ __('common.alert') }}",
+                title: "Alert",
                 icon: 'warning',
-                text: "{{ __('common.delete_confirm') }}",
+                text: "Are you sure",
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: "{{ __('common.yes') }}",
-                cancelButtonText: "{{ __('common.cancel') }}",
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
             }).then((result) => {
                 if (result.isConfirmed) {
-                    var url = $(this).attr('data-href');
+                    // let url = $(this).attr('data-href');
                     $.ajax({
                         type: 'DELETE',
                         url: url,

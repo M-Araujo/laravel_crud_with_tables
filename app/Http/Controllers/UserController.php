@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 
@@ -104,5 +105,25 @@ class UserController extends Controller
     protected function filePath()
     {
         return '';
+    }
+
+
+    public function destroy($id)
+    {
+        $item = User::find($id);
+
+        if ($item) {
+            if (is_countable($this->imagesAttributes()) && count($this->imagesAttributes()) > 0) {
+                foreach ($this->imagesAttributes() as $attribute) {
+                    $file_path = public_path() . '/' . $this->filePath() . '/' . $item->getRawOriginal($attribute);
+                    if (!is_dir($file_path) && file_exists($file_path)) {
+                        unlink($file_path);
+                    }
+                }
+            }
+            $item->delete();
+            Session::put('success_message', 'Item apagado com sucesso');
+        }
+        return Response::json(['status' => 200], 200);
     }
 }
