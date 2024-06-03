@@ -8,7 +8,7 @@
             <li>
 
             <li>
-                <a id=''
+                <a id='/users' href="/users"
                    class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <svg class="h-6 w-6 text-gray-500" width="24" height="24" viewBox="0 0 24 24"
                          stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
@@ -16,7 +16,7 @@
                         <path stroke="none" d="M0 0h24v24H0z"/>
                         <polyline points="21 12 17 12 14 20 10 4 7 12 3 12"/>
                     </svg>
-                    <span class="flex-1 ml-3 whitespace-nowrap">Dummy list 1</span>
+                    <span class="flex-1 ml-3 whitespace-nowrap">Users</span>
                 </a>
             </li>
 

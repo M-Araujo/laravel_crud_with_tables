@@ -1,4 +1,5 @@
-<!doctype html>
+@php use Illuminate\Support\Facades\Session; @endphp
+        <!doctype html>
 
 <html>
 
@@ -69,7 +70,6 @@
 <script type="text/javascript" src="{{ URL::asset('js/jquery_3_7_1.min.js') }}"></script>
 <script type="text/javascript" src="{{ URL::asset('js/datatables1_13_6.min.js') }}"></script>
 <script type="text/javascript" src="{{ URL::asset('js/flowbite1_8_1.min.js') }}"></script>
-<script type="text/javascript" src="{{ URL::asset('js/form_validation.js') }}"></script>
 <script type="text/javascript" src="{{ URL::asset('js/dropify.min.js') }}"></script>
 <script type="text/javascript" src="{{ URL::asset('js/select2.min.js') }}"></script>
 <script type="text/javascript" src="{{ URL::asset('js/custom.js') }}"></script>
