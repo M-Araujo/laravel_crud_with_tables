@@ -25,8 +25,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'sometimes|max:255|string',
             'email' => 'nullable|email|max:255',
-            'user_id' => 'required|int',
-            'picture' => 'required|base64dimensions:min_width=100,min_height=200,max_width=400,max_height=500'
+            'picture' => 'sometimes|base64dimensions:min_width=100,min_height=200,max_width=400,max_height=500'
         ];
     }
 }

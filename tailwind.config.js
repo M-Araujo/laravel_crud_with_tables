@@ -4,10 +4,11 @@ export default {
         "./resources/**/*.blade.php",
         "./resources/**/*.js",
         "./resources/**/*.vue",
+        "./node_modules/tw-elements/js/**/*.js"
     ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+
+    theme: {},
+    plugins: [],
+    safelist: []
 }
 

@@ -38,14 +38,10 @@ class User extends Authenticatable
     public function getPictureAttribute($value): string
     {
         if ($value && $value != '') {
-            Log::info(1);
             return Config::get('app.url') . '/' . $value;
 
-        } else {
-            Log::info(2);
-            Log::info(asset('images/avatar.png'));
-            return asset('images/avatar.png');
         }
+        return asset('images/avatar.png');
     }
 
     /**
