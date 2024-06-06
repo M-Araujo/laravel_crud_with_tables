@@ -49,20 +49,15 @@
 
 
     $(document).ready(function () {
-        var table = $('#example').dataTable({
+        var table = $('#table').dataTable({
             responsive: true,
             colReorder: true,
             "deferRender": true,
-            "lengthChange": false,
-            "language": {
-                // not necessary here
-            }
+            "lengthChange": false
         });
 
         table.on('click', '.delete_btn', function () {
-
             let url = $(this).attr('data-href');
-            console.log(url);
 
             Swal.fire({
                 title: "Alert",
@@ -75,7 +70,6 @@
                 cancelButtonText: "No",
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // let url = $(this).attr('data-href');
                     $.ajax({
                         type: 'DELETE',
                         url: url,

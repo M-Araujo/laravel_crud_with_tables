@@ -17,12 +17,19 @@
                                class="block mb-1 text-sm font-medium text-700">User name</label>
                         <input type="text" value="{{ $item->name }}" name="name"
                                class=" border text-sm rounded-lg block w-full p-2.5">
+
+                        @error('name')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div class="pt-4">
                         <label for="username-success"
                                class="block mb-1 text-sm font-medium text-700">Email</label>
                         <input type="text" value="{{ $item->email }}" name="email"
                                class=" border text-sm rounded-lg block w-full p-2.5">
+                        @error('email')
+                        <span class="text-red-500 text-sm">{{ $message }}</span>
+                        @enderror
                     </div>
 
                 </div>

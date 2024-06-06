@@ -4,8 +4,15 @@
 
     <div class="md:container md:mx-auto">
 
-        <h2 class="text-4xl font-bold dark:text-white">Users</h2>
-        <table id="example" class="display" style="width:100%">
+        <div class="flex justify-between mb-10">
+            <h2 class="text-4xl font-bold dark:text-white">Users</h2>
+            
+            <a href="users/create"
+               class="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-900">Create
+            </a>
+
+        </div>
+        <table id="table" class="display" style="width:100%">
             <thead>
             <tr>
                 <th>Id</th>
