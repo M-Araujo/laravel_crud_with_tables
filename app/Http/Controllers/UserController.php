@@ -6,11 +6,14 @@ use App\Http\Requests\User\UpdateUserRequest;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Image;
 
 
 class UserController extends Controller
@@ -33,16 +36,15 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), $this->updateRequest()->rules());
 
         if ($validator->fails()) {
-            Session::put('error_message', __('common.error'));
+            Session::put('error_message', 'Oops, ocorreu um erro.');
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         $old_images = [];
         $data = $request->only(['name', 'email', 'picture']);
-
         $item = User::find($id);
-
         $data = data_forget($data, $this->imagesAttributes());
+
         if (is_countable($this->imagesAttributes())) {
             foreach ($this->imagesAttributes() as $attribute) {
                 if ($request->hasFile($attribute)) {
@@ -73,40 +75,42 @@ class UserController extends Controller
         }
     }
 
-    protected function updateRequest()
+    protected function updateRequest(): UpdateUserRequest
     {
         return new UpdateUserRequest;
     }
 
-    protected function imagesAttributes()
+    protected function imagesAttributes(): array
     {
         return ['picture'];
     }
 
-    public function updateImage($request, $item, $old_images, $attribute)
-    {
-        $fileNameWithExt = $request->file($attribute)->getClientOriginalName();
-        $filename = pathinfo($fileNameWithExt, PATHINFO_FILENAME);
-        $extension = $request->file($attribute)->getClientOriginalExtension();
-        $fileNameToStore = $filename . '_' . time() . '.' . $extension;
 
-        $request->$attribute->move(public_path($this->filePath()), $fileNameToStore);
-        $item[$attribute] = $fileNameToStore;
+    public function updateImage($request, $item, $old_images, $attribute): void
+    {
+        if (is_countable($this->imagesAttributes())) {
+            foreach ($this->imagesAttributes() as $attribute) {
+                if ($request->hasFile($attribute)) {
+                    $old_images[$attribute] = $item->getRawOriginal($attribute); // igual ao da bd
+                }
+            }
+        }
+
+        $filename = time() . '.' . $request->file('picture')->getClientOriginalExtension();
+
+        // in storage
+        $path = $request->file('picture')->storeAs('public/users', $filename);
+
+        $item[$attribute] = $path;
         $item->save();
 
         if ($old_images[$attribute]) {
-            $oldPhotoPath = public_path() . '/' . $this->filePath() . '/' . $old_images[$attribute];
-            if (file_exists($oldPhotoPath)) {
-                unlink($oldPhotoPath);
+            $oldPhotoPath = $old_images[$attribute];
+            if (Storage::exists($oldPhotoPath)) {
+                Storage::delete($oldPhotoPath);
             }
         }
     }
-
-    protected function filePath()
-    {
-        return '';
-    }
-
 
     public function destroy($id)
     {
@@ -122,8 +126,13 @@ class UserController extends Controller
                 }
             }
             $item->delete();
-            Session::put('success_message', 'Item apagado com sucesso');
+            Session::put('success_message', 'Item deleted with success.');
         }
         return Response::json(['status' => 200], 200);
+    }
+
+    protected function filePath(): string
+    {
+        return '';
     }
 }

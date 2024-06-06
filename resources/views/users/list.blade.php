@@ -20,8 +20,8 @@
                 <tr>
                     <td>{{ $user['id'] }}</td>
                     <td>
-                        <div class="relative w-12 h-12 overflow-hidden bg-gray-100 rounded-full dark:bg-gray-600">
-                            <img class="object-fill p-1 rounded-full ring-2 ring-gray-300 dark:ring-gray-500"
+                        <div class="relative  overflow-hidden rounded-full dark:bg-gray-600">
+                            <img class="w-10 h-10 rounded-full"
                                  src="{{ $user['picture'] }}" alt="user photo">
                         </div>
                     </td>

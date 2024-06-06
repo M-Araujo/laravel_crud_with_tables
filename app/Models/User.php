@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -38,8 +39,7 @@ class User extends Authenticatable
     public function getPictureAttribute($value): string
     {
         if ($value && $value != '') {
-            return Config::get('app.url') . '/' . $value;
-
+            return Config::get('app.url') . Storage::url($value);
         }
         return asset('images/avatar.png');
     }

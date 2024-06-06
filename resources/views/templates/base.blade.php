@@ -67,7 +67,7 @@
             Swal.fire({
                 title: "Alert",
                 icon: 'warning',
-                text: "Are you sure",
+                text: "Are you sure?",
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
