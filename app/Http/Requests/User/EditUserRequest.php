@@ -36,7 +36,7 @@ class EditUserRequest extends FormRequest
                 'regex:/[0-9]/',      // Must contain at least one digit
                 'regex:/[@$!%*#?&]/', // Must contain a special character
             ],
-            'password_confirm' => 'nullable|same:password'
+            'password_confirm' => 'sometimes|same:password'
         ];
     }
 }

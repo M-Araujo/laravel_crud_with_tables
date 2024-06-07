@@ -49,14 +49,14 @@ class UserController extends Controller
 
         try {
             $item = User::create($data);
-            $this->insertImages($request, $item);
+            $this->insertOrUpdateImages($request, $item, $old_images = []);
             DB::commit();
 
             Session::put('success_message', 'Item updated with success.');
             return redirect('/users');
         } catch (Exception $e) {
             DB::rollback();
-            
+
             Session::put('error_message', 'Oops, something is wrong.');
             return redirect()->back()->withInput();
         }
@@ -72,21 +72,31 @@ class UserController extends Controller
         return view('users.edit');
     }
 
-    public function insertImages($request, $item): void
+    public function insertOrUpdateImages($request, $item, $old_images): void
     {
-        if (is_countable($this->imagesAttributes())) {
-            foreach ($this->imagesAttributes() as $attribute) {
+        if (is_countable($this->modelImages())) {
+            foreach ($this->modelImages() as $attribute) {
                 if ($request->hasFile($attribute)) {
+
+                    $old_images[$attribute] = $item->getRawOriginal($attribute);
+
                     $filename = time() . '.' . $request->file('picture')->getClientOriginalExtension();
                     $path = $request->file('picture')->storeAs('public/users', $filename);
                     $item[$attribute] = $path;
                     $item->save();
+
+                    if ($old_images[$attribute]) {
+                        $oldPhotoPath = $old_images[$attribute];
+                        if (Storage::exists($oldPhotoPath)) {
+                            Storage::delete($oldPhotoPath);
+                        }
+                    }
                 }
             }
         }
     }
 
-    protected function imagesAttributes(): array
+    protected function modelImages(): array
     {
         return ['picture'];
     }
@@ -103,10 +113,10 @@ class UserController extends Controller
         $old_images = [];
         $data = $request->only(['name', 'email', 'picture']);
         $item = User::find($id);
-        $data = data_forget($data, $this->imagesAttributes());
+        $data = data_forget($data, $this->modelImages());
 
-        if (is_countable($this->imagesAttributes())) {
-            foreach ($this->imagesAttributes() as $attribute) {
+        if (is_countable($this->modelImages())) {
+            foreach ($this->modelImages() as $attribute) {
                 if ($request->hasFile($attribute)) {
                     $old_images[$attribute] = $item->getRawOriginal($attribute);
                 }
@@ -117,19 +127,15 @@ class UserController extends Controller
 
         try {
             $item->update($data);
+            $this->insertOrUpdateImages($request, $item, $old_images);
+
             DB::commit();
-            if (is_countable($this->imagesAttributes())) {
-                foreach ($this->imagesAttributes() as $attribute) {
-                    if ($request->hasFile($attribute)) {
-                        $this->updateImage($request, $item, $old_images, $attribute);
-                    }
-                }
-            }
 
             Session::put('success_message', 'Item updated with success.');
             return redirect('/users');
         } catch (Exception $e) {
             DB::rollback();
+
             Session::put('error_message', 'Oops, something is wrong.');
             return redirect()->back()->withInput();
         }
@@ -140,39 +146,13 @@ class UserController extends Controller
         return new EditUserRequest;
     }
 
-    public function updateImage($request, $item, $old_images, $attribute): void
-    {
-        if (is_countable($this->imagesAttributes())) {
-            foreach ($this->imagesAttributes() as $attribute) {
-                if ($request->hasFile($attribute)) {
-                    $old_images[$attribute] = $item->getRawOriginal($attribute); // igual ao da bd
-                }
-            }
-        }
-
-        $filename = time() . '.' . $request->file('picture')->getClientOriginalExtension();
-
-        // in storage
-        $path = $request->file('picture')->storeAs('public/users', $filename);
-
-        $item[$attribute] = $path;
-        $item->save();
-
-        if ($old_images[$attribute]) {
-            $oldPhotoPath = $old_images[$attribute];
-            if (Storage::exists($oldPhotoPath)) {
-                Storage::delete($oldPhotoPath);
-            }
-        }
-    }
-
     public function destroy($id)
     {
         $item = User::find($id);
 
         if ($item) {
-            if (is_countable($this->imagesAttributes()) && count($this->imagesAttributes()) > 0) {
-                foreach ($this->imagesAttributes() as $attribute) {
+            if (is_countable($this->modelImages()) && count($this->modelImages()) > 0) {
+                foreach ($this->modelImages() as $attribute) {
                     $file_path = public_path() . '/' . $this->filePath() . '/' . $item->getRawOriginal($attribute);
                     if (!is_dir($file_path) && file_exists($file_path)) {
                         unlink($file_path);
