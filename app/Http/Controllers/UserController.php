@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\User\UpdateUserRequest;
+use App\Http\Requests\User\CreateUserRequest;
+use App\Http\Requests\User\EditUserRequest;
 use App\Models\User;
 use Exception;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -19,24 +23,80 @@ use Intervention\Image\Image;
 class UserController extends Controller
 {
 
-    public function index(Request $request)
+    public function index(Request $request): Factory|\Illuminate\Foundation\Application|View|Application
     {
         $items = User::select('id', 'name', 'email', 'picture')->get();
         return view('users.list')->with(compact('items'));
     }
 
-    public function edit($id)
+    public function edit($id): Factory|\Illuminate\Foundation\Application|View|Application
     {
         $item = User::find($id);
         return view('users.edit')->with(compact('item'));
     }
 
-    public function update(Request $request, $id)
+    public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), $this->updateRequest()->rules());
+        $validator = Validator::make($request->all(), $this->createValidatorRequest()->rules());
 
         if ($validator->fails()) {
-            Session::put('error_message', 'Oops, ocorreu um erro.');
+            Session::put('error_message', 'Oops, something is wrong.');
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $data = $request->only(['name', 'email', 'password']);
+        DB::beginTransaction();
+
+        try {
+            $item = User::create($data);
+            $this->insertImages($request, $item);
+            DB::commit();
+
+            Session::put('success_message', 'Item updated with success.');
+            return redirect('/users');
+        } catch (Exception $e) {
+            DB::rollback();
+            
+            Session::put('error_message', 'Oops, something is wrong.');
+            return redirect()->back()->withInput();
+        }
+    }
+
+    protected function createValidatorRequest(): CreateUserRequest
+    {
+        return new CreateUserRequest;
+    }
+
+    public function create(): Factory|\Illuminate\Foundation\Application|View|Application
+    {
+        return view('users.edit');
+    }
+
+    public function insertImages($request, $item): void
+    {
+        if (is_countable($this->imagesAttributes())) {
+            foreach ($this->imagesAttributes() as $attribute) {
+                if ($request->hasFile($attribute)) {
+                    $filename = time() . '.' . $request->file('picture')->getClientOriginalExtension();
+                    $path = $request->file('picture')->storeAs('public/users', $filename);
+                    $item[$attribute] = $path;
+                    $item->save();
+                }
+            }
+        }
+    }
+
+    protected function imagesAttributes(): array
+    {
+        return ['picture'];
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), $this->updateValidatorRequest()->rules());
+
+        if ($validator->fails()) {
+            Session::put('error_message', 'Oops, something is wrong.');
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
@@ -75,16 +135,10 @@ class UserController extends Controller
         }
     }
 
-    protected function updateRequest(): UpdateUserRequest
+    protected function updateValidatorRequest(): EditUserRequest
     {
-        return new UpdateUserRequest;
+        return new EditUserRequest;
     }
-
-    protected function imagesAttributes(): array
-    {
-        return ['picture'];
-    }
-
 
     public function updateImage($request, $item, $old_images, $attribute): void
     {
