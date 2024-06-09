@@ -50,7 +50,7 @@ class User extends Authenticatable
 
     public function colours(): HasMany
     {
-        return $this->hasMany(UserColour::class, 'user_id');
+        return $this->hasMany(UserColour::class);
     }
 
     public function countries(): HasMany

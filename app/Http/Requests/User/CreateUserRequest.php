@@ -27,6 +27,9 @@ class CreateUserRequest extends FormRequest
             'email' => 'required|email|max:255',
             'picture' => 'sometimes|image|mimes:jpeg,jpg,png|required|max:10000',
             'has_kids' => 'required|boolean',
+            'country_id' => 'integer|required|exists:countries,id',
+            'colours_id' => 'required|array',
+            'colours_id.*' => 'required|integer|min:1|exists:colours,id',
             'password' => [
                 'required',
                 'string',

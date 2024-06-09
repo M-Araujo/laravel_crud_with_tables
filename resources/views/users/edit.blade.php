@@ -71,19 +71,21 @@
                             <div>
 
                                 <div>
+                                    @php
+                                        $options = [
+                                        ['value' => 0, 'name' => 'No'],
+                                        ['value' => 1, 'name' => 'Yes']
+                                        ]
+                                    @endphp
+
                                     <label for="has_kids-success"
                                            class="block mb-1 text-sm font-medium text-700">Has kids?</label>
                                     <select id="has_kids" name="has_kids"
                                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                        <option selected>Choose an option</option>
 
-                                        @php
-                                            $options = [
-                                            ['value' => 0, 'name' => 'No'],
-                                            ['value' => 1, 'name' => 'Yes']
-                                            ]
-                                        @endphp
+
                                         @foreach( $options as $option)
+
                                             <option
                                                     value={{$option['value']}}
                                             @isset($item)
@@ -98,7 +100,44 @@
                                     @error('has_kids')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
+                                </div>
 
+                                <div class="mt-4">
+                                    <label for="country_id-success"
+                                           class="block mb-1 text-sm font-medium text-700">Country</label>
+                                    <select id="country_id" name="country_id"
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        <option disabled selected value></option>
+                                        @foreach( $countries as $country)
+                                            <option
+                                                    value={{$country['id']}}
+
+                                            >{{$country['name']}}</option>
+                                        @endforeach
+
+                                    </select>
+                                    @error('country_id')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="mt-4">
+
+                                    <label for="colour_id-success"
+                                           class="block mb-1 text-sm font-medium text-700">Colour</label>
+                                    <select multiple id="colours_id" name="colours_id[]"
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        <option disabled selected value></option>
+                                        @foreach( $colours as $colour)
+                                            <option
+                                                    value={{$colour['id']}}
+                                            @isset($item) @if($item->colours && in_array($colour->id, $item->colours->pluck('colour_id')->toArray())) selected @endif @endisset >{{$colour['name']}}</option>
+                                        @endforeach
+
+                                    </select>
+                                    @error('colour_id')
+                                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                                    @enderror
                                 </div>
 
 
