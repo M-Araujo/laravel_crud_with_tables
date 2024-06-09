@@ -10,11 +10,10 @@
             <li>
                 <a id='/users' href="/users"
                    class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <svg class="h-6 w-6 text-gray-500" width="24" height="24" viewBox="0 0 24 24"
-                         stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                         stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z"/>
-                        <polyline points="21 12 17 12 14 20 10 4 7 12 3 12"/>
+                    <svg class="h-6 w-6 stroke-current"
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
                     <span class="flex-1 ml-3 whitespace-nowrap">Users</span>
                 </a>
@@ -23,14 +22,10 @@
             <li>
                 <a id=''
                    class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <svg class="h-6 w-6 text-gray-500" width="24" height="24" viewBox="0 0 24 24"
-                         stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                         stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z"/>
-                        <rect x="3" y="7" width="18" height="13" rx="2"/>
-                        <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/>
-                        <line x1="12" y1="12" x2="12" y2="12.01"/>
-                        <path d="M3 13a20 20 0 0 0 18 0"/>
+                    <svg class="h-6 w-6 " viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                     </svg>
                     <span class="flex-1 ml-3 whitespace-nowrap">Dummy list 2</span>
                 </a>
