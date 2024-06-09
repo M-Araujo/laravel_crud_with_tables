@@ -8,6 +8,7 @@ use App\Models\Colour;
 use App\Models\Country;
 use App\Models\User;
 use App\Models\UserColour;
+use App\Models\UserCountry;
 use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
@@ -66,6 +67,7 @@ class UserController extends Controller
         try {
             $item = User::create($data);
             $this->insertOrUpdateColours($request->input('colours_id'), $item);
+            $this->insertOrUpdateCountry($request->input('country_id'), $item);
             $this->insertOrUpdateImages($request, $item, $old_images = []);
 
             DB::commit();
@@ -105,6 +107,11 @@ class UserController extends Controller
                 ]);
             }
         }
+    }
+
+    public function insertOrUpdateCountry($country_id, $user): void
+    {
+        UserCountry::updateOrCreate(['user_id' => $user->id], ['country_id' => $country_id]);
     }
 
     public function insertOrUpdateImages($request, $item, $old_images): void
@@ -163,6 +170,7 @@ class UserController extends Controller
         try {
             $item->update($data);
             $this->insertOrUpdateColours($request->input('colours_id'), $item);
+            $this->insertOrUpdateCountry($request->input('country_id'), $item);
             $this->insertOrUpdateImages($request, $item, $old_images);
 
             DB::commit();

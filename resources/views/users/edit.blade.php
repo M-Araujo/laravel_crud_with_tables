@@ -103,6 +103,7 @@
                                 </div>
 
                                 <div class="mt-4">
+                          
                                     <label for="country_id-success"
                                            class="block mb-1 text-sm font-medium text-700">Country</label>
                                     <select id="country_id" name="country_id"
@@ -111,7 +112,9 @@
                                         @foreach( $countries as $country)
                                             <option
                                                     value={{$country['id']}}
-
+                                                    @isset($item)
+                                                    @if ($country['id'] === $item->country->country_id) selected @endif
+                                                    @endisset
                                             >{{$country['name']}}</option>
                                         @endforeach
 
