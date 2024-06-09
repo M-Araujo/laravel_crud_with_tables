@@ -44,7 +44,7 @@ class UserController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $data = $request->only(['name', 'email', 'password']);
+        $data = $request->only(['name', 'email', 'password', 'has_kids']);
         DB::beginTransaction();
 
         try {
@@ -111,7 +111,7 @@ class UserController extends Controller
         }
 
         $old_images = [];
-        $data = $request->only(['name', 'email', 'picture']);
+        $data = $request->only(['name', 'email', 'picture', 'has_kids']);
         $item = User::find($id);
         $data = data_forget($data, $this->modelImages());
 
