@@ -28,7 +28,13 @@
                                 <div>
                                     <label for="username-success"
                                            class="block mb-1 text-sm font-medium text-700">User name</label>
-                                    <input type="text" @isset($item) value="{{ $item->name }}" @endisset name="name"
+                                    <input type="text"
+                                           @isset($item)
+                                               value="{{ $item->name }}"
+                                           @endisset name="name"
+                                           @if(old('name'))
+                                               value="{{old('name')}}"
+                                           @endif
                                            class=" border text-sm rounded-lg block w-full p-2.5">
 
                                     @error('name')
@@ -39,7 +45,14 @@
                                 <div class="pt-4">
                                     <label for="email-success"
                                            class="block mb-1 text-sm font-medium text-700">Email</label>
-                                    <input type="text" @isset($item) value="{{ $item->email }}" @endisset name="email"
+                                    <input type="text"
+                                           @isset($item)
+                                               value="{{ $item->email }}"
+                                           @endisset
+                                           @if(old('email'))
+                                               value="{{old('email')}}"
+                                           @endif
+                                           name="email"
                                            class=" border text-sm rounded-lg block w-full p-2.5">
                                     @error('email')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -83,7 +96,7 @@
                                     <select id="has_kids" name="has_kids"
                                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
 
-
+                                        <option disabled selected value></option>
                                         @foreach( $options as $option)
 
                                             <option
@@ -93,6 +106,11 @@
                                             selected
                                                     @endif
                                                     @endisset
+
+                                                    @if(old('has_kids') == $option['value'])
+                                                        selected
+                                                    @endif
+
                                             >{{$option['name']}}</option>
                                         @endforeach
 
@@ -103,7 +121,7 @@
                                 </div>
 
                                 <div class="mt-4">
-                          
+
                                     <label for="country_id-success"
                                            class="block mb-1 text-sm font-medium text-700">Country</label>
                                     <select id="country_id" name="country_id"
@@ -114,7 +132,11 @@
                                                     value={{$country['id']}}
                                                     @isset($item)
                                                     @if ($country['id'] === $item->country->country_id) selected @endif
-                                                    @endisset
+                                            @endisset
+
+                                            @if(old('country_id') == $country['id'])
+                                                selected
+                                                    @endif
                                             >{{$country['name']}}</option>
                                         @endforeach
 
@@ -134,11 +156,15 @@
                                         @foreach( $colours as $colour)
                                             <option
                                                     value={{$colour['id']}}
-                                            @isset($item) @if($item->colours && in_array($colour->id, $item->colours->pluck('colour_id')->toArray())) selected @endif @endisset >{{$colour['name']}}</option>
+                                            @isset($item) @if($item->colours && in_array($colour->id, $item->colours->pluck('colour_id')->toArray())) selected
+                                                    @endif @endisset
+                                                    @if(old('colours_id') && in_array($colour->id, old('colours_id'))) selected @endif
+                                            >{{$colour['name']}}</option>
+
                                         @endforeach
 
                                     </select>
-                                    @error('colour_id')
+                                    @error('colours_id')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
                                 </div>
