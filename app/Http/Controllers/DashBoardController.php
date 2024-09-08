@@ -13,8 +13,6 @@ class DashBoardController extends Controller
     public function index(Request $request): Factory|\Illuminate\Foundation\Application|View|Application
     {
         $stats = (new DashboardStats)->stats();
-
-
         return view('dashboard')->with(compact('stats'));
     }
 
