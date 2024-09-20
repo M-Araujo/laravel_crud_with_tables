@@ -33,9 +33,6 @@ class UserControllerTest extends TestCase
         // Arrange: Create some users
         $users = User::factory()->count(5)->create();
 
-        // Use one of the created users for authentication
-        $this->actingAs($users->first());
-
         // Act: Send a GET request to the index route
         $response = $this->get('/users');
 
@@ -45,6 +42,13 @@ class UserControllerTest extends TestCase
         $response->assertViewHas('items');
 
         $items = $response->viewData('items');
+
+        foreach ($items as $item) {
+            $this->assertArrayHasKey('id', $item->toArray());
+            $this->assertArrayHasKey('name', $item->toArray());
+            $this->assertArrayHasKey('email', $item->toArray());
+            $this->assertArrayHasKey('picture', $item->toArray());
+        }
 
         // Check the count
         $this->assertCount(5, $items, 'Expected 5 items, but found ' . $items->count());
@@ -63,22 +67,27 @@ class UserControllerTest extends TestCase
         $colours = Colour::factory()->count(5)->create();
         $countries = Country::factory()->count(3)->create();
 
-        // Use one of the users for authentication
-        $user = User::factory()->create();
-        $this->actingAs($user);
-
         // Act: Send a GET request to the create route
         $response = $this->get('/users/create');
 
         // Assert: Verify the response
         $response->assertStatus(200);
-        $response->assertViewIs('users.edit'); // Assuming 'users.edit' is used for both create and edit
+        $response->assertViewIs('users.edit');
         $response->assertViewHas('colours');
         $response->assertViewHas('countries');
 
-        // Optionally, check that the correct data is passed
+        // Check that the correct data is passed
         $this->assertCount(5, $response->viewData('colours'));
         $this->assertCount(3, $response->viewData('countries'));
+
+        // Additional assertions for checking IDs
+        $expectedColourIds = $colours->pluck('id')->sort()->values()->all();
+        $actualColourIds = $response->viewData('colours')->pluck('id')->sort()->values()->all();
+        $this->assertEquals($expectedColourIds, $actualColourIds);
+
+        $expectedCountryIds = $countries->pluck('id')->sort()->values()->all();
+        $actualCountryIds = $response->viewData('countries')->pluck('id')->sort()->values()->all();
+        $this->assertEquals($expectedCountryIds, $actualCountryIds);
     }
 
 
