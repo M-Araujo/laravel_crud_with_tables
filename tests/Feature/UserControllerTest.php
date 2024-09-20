@@ -9,6 +9,7 @@ use App\Models\Colour;
 use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Config;
 use Log;
 
 class UserControllerTest extends TestCase
@@ -211,7 +212,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create();
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
-        Storage::fake('public');  // Fake the 'public' disk for testing
+        //  Storage::fake('public');  // Fake the 'public' disk for testing
 
         // Simulate a logged-in user
         $authenticatedUser = User::factory()->create();
@@ -247,8 +248,8 @@ class UserControllerTest extends TestCase
         // Reload the user to check the updated database value
         $user->refresh();
 
-        // Assert the raw picture value in the database matches the expected custom filename
-        $this->assertEquals('users/' . $customFileName, $user->raw_picture);
+        // Assert the picture value in the database matches the expected custom filename
+        $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $customFileName), $user->picture);
 
         // Assert the file was stored in the 'public' disk with the correct custom name
         Storage::disk('public')->assertExists('users/' . $customFileName);  // Assert that the custom file name exists
