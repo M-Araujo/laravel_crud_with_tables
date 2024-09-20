@@ -40,7 +40,7 @@ class CreateUserRequest extends FormRequest
                 'regex:/[0-9]/',      // Must contain at least one digit
                 'regex:/[@$!%*#?&]/', // Must contain a special character
             ],
-            'password_confirm' => 'required|same:password'
+            'password_confirmation' => 'required|same:password'
         ];
     }
 }

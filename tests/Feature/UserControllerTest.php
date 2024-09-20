@@ -90,52 +90,102 @@ class UserControllerTest extends TestCase
         $this->assertEquals($expectedCountryIds, $actualCountryIds);
     }
 
+    /*
+        public function testStoreSuccessfullyCreatesUserWithCsrf()
+        {
+            $this->startSession();
+            $this->withoutExceptionHandling();
 
-    public function testStoreSuccessfullyCreatesUserWithCsrf()
+            // Arrange
+            $colours = Colour::factory()->count(3)->create();
+            $country = Country::factory()->create();
+            //Storage::fake('public');  // Fake the 'public' disk for testing file storage
+
+            $authenticatedUser = User::factory()->create();
+
+            // Simulate a logged-in user
+            $this->actingAs($authenticatedUser);
+
+            // Generate a CSRF token
+            $csrfToken = csrf_token();
+
+            $profilePicture = UploadedFile::fake()->image('avatar.jpg');
+            //$uploadedFile = UploadedFile::fake()->image('new_avatar.jpg');
+
+            // Generate a custom file name (same as in the controller)
+            $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
+
+
+            $data = [
+                '_token' => $csrfToken, // Explicitly add CSRF token here
+                'name' => 'Alice Johnson',
+                'email' => 'alice.johnson@example.com',
+                'password' => 'Password@123',
+                'password_confirm' => 'Password@123',
+                'has_kids' => 1,
+                'country_id' => $country->id,
+                'colours_id' => $colours->pluck('id')->toArray(),
+                'picture' => $profilePicture, // UploadedFile instance
+            ];
+
+            // Act: Send a POST request
+            $response = $this->post('/users', $data);
+
+            // Assert: Verify the response and database
+            $response->assertRedirect('/users');
+            $response->assertSessionHas('success_message', 'Item updated with success.');
+
+            // Check that the user was created correctly
+            $createdUser = User::where('email', 'alice.johnson@example.com')->first();
+            $this->assertNotNull($createdUser);
+
+            // Assert the file was stored in the 'public' disk with the correct custom name
+            Storage::disk('public')->assertExists('users/' . $profilePictureFileName);
+
+            // Assert the picture value in the database matches the expected custom filename
+            $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $profilePictureFileName), $createdUser->picture);
+
+        }
+    */
+
+
+    public function testStoreSuccessfully()
     {
         $this->startSession();
         $this->withoutExceptionHandling();
 
-        // Arrange
+        // Arrange: Create necessary data
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
         //Storage::fake('public');  // Fake the 'public' disk for testing file storage
 
-        $authenticatedUser = User::factory()->create();
-
-        // Simulate a logged-in user
-        $this->actingAs($authenticatedUser);
-
         // Generate a CSRF token
         $csrfToken = csrf_token();
 
+        // Simulate a file upload for the user's profile picture
         $profilePicture = UploadedFile::fake()->image('avatar.jpg');
-        //$uploadedFile = UploadedFile::fake()->image('new_avatar.jpg');
-
-        // Generate a custom file name (same as in the controller)
         $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
-
 
         $data = [
             '_token' => $csrfToken, // Explicitly add CSRF token here
             'name' => 'Alice Johnson',
             'email' => 'alice.johnson@example.com',
             'password' => 'Password@123',
-            'password_confirm' => 'Password@123',
+            'password_confirmation' => 'Password@123', // Use password_confirmation instead of password_confirm
             'has_kids' => 1,
             'country_id' => $country->id,
             'colours_id' => $colours->pluck('id')->toArray(),
             'picture' => $profilePicture, // UploadedFile instance
         ];
 
-        // Act: Send a POST request
+        // Act: Send a POST request to the store method
         $response = $this->post('/users', $data);
 
-        // Assert: Verify the response and database
+        // Assert: Check that the response redirects and has the success message
         $response->assertRedirect('/users');
         $response->assertSessionHas('success_message', 'Item updated with success.');
 
-        // Check that the user was created correctly
+        // Assert: Verify the user was created in the database
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
@@ -144,7 +194,6 @@ class UserControllerTest extends TestCase
 
         // Assert the picture value in the database matches the expected custom filename
         $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $profilePictureFileName), $createdUser->picture);
-
     }
 
 
