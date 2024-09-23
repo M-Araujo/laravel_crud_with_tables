@@ -148,9 +148,7 @@ class UserControllerTest extends TestCase
 
 
 
-    /*
 
-    nao apagar
     public function testUpdateUserSuccessfully()
     {
         $this->startSession();  // Start the session for CSRF handling
@@ -160,7 +158,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create();
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
-        //  Storage::fake('public');  // Fake the 'public' disk for testing
+        Storage::fake('local');  // Fake the 'local' disk for testing
 
         // Simulate a logged-in user
         $authenticatedUser = User::factory()->create();
@@ -197,10 +195,10 @@ class UserControllerTest extends TestCase
         $user->refresh();
 
         // Assert the picture value in the database matches the expected custom filename
-        $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $customFileName), $user->picture);
+        $this->assertEquals(Config::get('app.url') . Storage::url('public/users/' . $customFileName), $user->picture);
 
-        // Assert the file was stored in the 'public' disk with the correct custom name
-        Storage::disk('public')->assertExists('users/' . $customFileName);  // Assert that the custom file name exists
+        // Assert the file was stored in the 'local' disk with the correct custom name
+        Storage::disk('local')->assertExists('public/users/' . $customFileName);  // Assert that the custom file name exists
 
         // Assert the country relationship is updated correctly in the pivot table
         $this->assertDatabaseHas('user_countries', [
@@ -208,9 +206,6 @@ class UserControllerTest extends TestCase
             'country_id' => $country->id,
         ]);
     }
-
-*/
-
 
     protected function tearDown(): void
     {
