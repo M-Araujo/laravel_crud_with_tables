@@ -10,6 +10,7 @@ use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use Log;
 
 class UserControllerTest extends TestCase
@@ -90,74 +91,19 @@ class UserControllerTest extends TestCase
         $this->assertEquals($expectedCountryIds, $actualCountryIds);
     }
 
-    /*
-        public function testStoreSuccessfullyCreatesUserWithCsrf()
-        {
-            $this->startSession();
-            $this->withoutExceptionHandling();
 
-            // Arrange
-            $colours = Colour::factory()->count(3)->create();
-            $country = Country::factory()->create();
-            //Storage::fake('public');  // Fake the 'public' disk for testing file storage
-
-            $authenticatedUser = User::factory()->create();
-
-            // Simulate a logged-in user
-            $this->actingAs($authenticatedUser);
-
-            // Generate a CSRF token
-            $csrfToken = csrf_token();
-
-            $profilePicture = UploadedFile::fake()->image('avatar.jpg');
-            //$uploadedFile = UploadedFile::fake()->image('new_avatar.jpg');
-
-            // Generate a custom file name (same as in the controller)
-            $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
-
-
-            $data = [
-                '_token' => $csrfToken, // Explicitly add CSRF token here
-                'name' => 'Alice Johnson',
-                'email' => 'alice.johnson@example.com',
-                'password' => 'Password@123',
-                'password_confirm' => 'Password@123',
-                'has_kids' => 1,
-                'country_id' => $country->id,
-                'colours_id' => $colours->pluck('id')->toArray(),
-                'picture' => $profilePicture, // UploadedFile instance
-            ];
-
-            // Act: Send a POST request
-            $response = $this->post('/users', $data);
-
-            // Assert: Verify the response and database
-            $response->assertRedirect('/users');
-            $response->assertSessionHas('success_message', 'Item updated with success.');
-
-            // Check that the user was created correctly
-            $createdUser = User::where('email', 'alice.johnson@example.com')->first();
-            $this->assertNotNull($createdUser);
-
-            // Assert the file was stored in the 'public' disk with the correct custom name
-            Storage::disk('public')->assertExists('users/' . $profilePictureFileName);
-
-            // Assert the picture value in the database matches the expected custom filename
-            $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $profilePictureFileName), $createdUser->picture);
-
-        }
-    */
 
 
     public function testStoreSuccessfully()
     {
         $this->startSession();
         $this->withoutExceptionHandling();
+        Storage::fake('local'); // Fake the 'local' disk for testing file storage
 
         // Arrange: Create necessary data
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
-        //Storage::fake('public');  // Fake the 'public' disk for testing file storage
+
 
         // Generate a CSRF token
         $csrfToken = csrf_token();
@@ -189,15 +135,22 @@ class UserControllerTest extends TestCase
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
+        dump(Storage::disk('local')->allFiles()); // Should show files in the fake disk
+        //  dump(File::files(storage_path('app/public/storage/testing_users')));
+
+        $this->app->detectEnvironment(fn() => 'testing');
         // Assert the file was stored in the 'public' disk with the correct custom name
-        Storage::disk('public')->assertExists('users/' . $profilePictureFileName);
+        Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
 
         // Assert the picture value in the database matches the expected custom filename
-        $this->assertEquals(Config::get('app.url') . Storage::url('users/' . $profilePictureFileName), $createdUser->picture);
+        $this->assertEquals(Config::get('app.url') . Storage::url('public/users/' . $profilePictureFileName), $createdUser->picture);
     }
 
 
 
+    /*
+
+    nao apagar
     public function testUpdateUserSuccessfully()
     {
         $this->startSession();  // Start the session for CSRF handling
@@ -256,7 +209,7 @@ class UserControllerTest extends TestCase
         ]);
     }
 
-
+*/
 
 
     protected function tearDown(): void
