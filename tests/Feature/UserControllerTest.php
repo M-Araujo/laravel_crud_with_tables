@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\Concerns\InteractsWithSession;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Colour;
@@ -16,6 +17,7 @@ use Log;
 class UserControllerTest extends TestCase
 {
     use RefreshDatabase;
+    use InteractsWithSession;
 
     protected function setUp(): void
     {
@@ -135,7 +137,7 @@ class UserControllerTest extends TestCase
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
-        dump(Storage::disk('local')->allFiles()); // Should show files in the fake disk
+        //  dump(Storage::disk('local')->allFiles()); // Should show files in the fake disk
         //  dump(File::files(storage_path('app/public/storage/testing_users')));
 
         $this->app->detectEnvironment(fn() => 'testing');
@@ -207,11 +209,119 @@ class UserControllerTest extends TestCase
         ]);
     }
 
+
+
+    /*
+        public function testDeleteUserSuccessfully()
+        {
+            $this->startSession();
+            $this->withoutExceptionHandling();
+
+            // Fake the 'local' disk to prevent real file creation
+            Storage::fake('local');
+
+            // Arrange: Create a user and store their profile picture with a timestamp-based file name
+            $user = User::factory()->create();
+            $profilePictureFileName = time() . '.jpg'; // Use timestamp-based file name
+            $profilePicturePath = 'public/users/' . $profilePictureFileName;
+
+            // Manually store the file in the 'public/users' directory of the fake 'local' disk
+            Storage::disk('local')->put($profilePicturePath, UploadedFile::fake()->image('avatar.jpg'));
+
+            // Log the stored file path for debugging
+            dump('Stored profile picture path:', $profilePicturePath);
+
+            // Update the user's picture field in the database with the relative path
+            $user->update(['picture' => $profilePicturePath]);
+
+            // Ensure the file exists in the fake storage before deletion
+            dump('Before deletion, does file exist? (should be true):', Storage::disk('local')->exists($profilePicturePath));
+            Storage::disk('local')->assertExists($profilePicturePath);
+
+            // Generate a valid CSRF token
+            $csrfToken = csrf_token();
+
+            // Act: Send a DELETE request to the destroy method with CSRF token
+            $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
+
+            // Log the path being checked for deletion
+            dump('Attempting to delete profile picture path:', $profilePicturePath);
+
+            // Log after the delete request
+            dump('After deletion, does file exist? (should be false):', Storage::disk('local')->exists($profilePicturePath));
+
+            // Assert: Verify the response status and session message using the $response object
+            $response->assertStatus(200);
+            $response->assertSessionHas('success_message', 'Item deleted with success.');
+
+            // Assert: The user was deleted from the database
+            $this->assertDatabaseMissing('users', ['id' => $user->id]);
+
+            // Ensure the file was actually deleted from the storage
+            Storage::disk('local')->assertMissing($profilePicturePath);
+        }
+    */
+
+
+
+
+    public function testDeleteUserSuccessfully()
+    {
+        $this->startSession();
+        $this->withoutExceptionHandling();
+
+        // Mock the disk instance, not the entire Storage facade
+        $storageDiskMock = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+
+        // When Storage::disk('local') is called, return our mocked disk
+        \Illuminate\Support\Facades\Storage::shouldReceive('disk')
+            ->with('local')
+            ->andReturn($storageDiskMock);
+
+        // Arrange: Create a user and simulate a stored profile picture
+        $user = User::factory()->create();
+        $profilePictureFileName = time() . '.jpg';
+        $profilePicturePath = 'public/users/' . $profilePictureFileName;
+
+        // Simulate the file existing before deletion
+        $storageDiskMock->shouldReceive('exists')
+            ->with($profilePicturePath)
+            ->andReturn(true);
+
+        // Simulate the file being deleted
+        $storageDiskMock->shouldReceive('delete')
+            ->with($profilePicturePath)
+            ->andReturn(true);
+
+        // Update the user's picture field in the database with the relative path
+        $user->update(['picture' => $profilePicturePath]);
+
+        // Generate a valid CSRF token
+        $csrfToken = csrf_token();
+
+        // Act: Send a DELETE request to the destroy method
+        $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
+
+        // Assert: Verify the response status and session message using the $response object
+        $response->assertStatus(200);
+        $response->assertSessionHas('success_message', 'Item deleted with success.');
+
+        // Assert: The user was deleted from the database
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+
+        // Verify that the delete method was called on the mocked disk
+        $storageDiskMock->shouldHaveReceived('delete')->with($profilePicturePath)->once();
+    }
+
+
     protected function tearDown(): void
     {
         if (ob_get_length()) {
             ob_end_clean();
         }
+
+
+        \Mockery::close();
         parent::tearDown();
     }
 }

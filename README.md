@@ -19,6 +19,9 @@ And then run php artisan migrate (if you don´t have a database already, the com
 create one).
 
 After that, enter the command line "php artisan tinker" and run the commands bellow, feel free to change the quantities.
+
+-> php artisan tinker
+
 User::factory()->count(10)->create();
 Colour::factory()->count(10)->create();
 Country::factory()->count(10)->create();

@@ -190,24 +190,37 @@ class UserController extends Controller
         return new EditUserRequest;
     }
 
-    public function destroy($id)
+
+    public function destroy($id, $disk = null)
     {
+        $disk = $disk ?? Config::get('filesystems.default'); // Use the default disk or the one passed
         $item = User::find($id);
 
         if ($item) {
             if (is_countable($this->modelImages()) && count($this->modelImages()) > 0) {
                 foreach ($this->modelImages() as $attribute) {
-                    $file_path = public_path() . '/' . $this->filePath() . '/' . $item->getRawOriginal($attribute);
-                    if (!is_dir($file_path) && file_exists($file_path)) {
-                        unlink($file_path);
+                    $filePath = $item->getRawOriginal($attribute);
+
+                    // Use the disk provided (for testing, we ensure it uses 'local')
+                    if ($filePath && Storage::disk($disk)->exists($filePath)) {
+                        Storage::disk($disk)->delete($filePath);
+                    } else {
+                        Log::info("File does not exist or could not be deleted.");
                     }
                 }
             }
             $item->delete();
             Session::put('success_message', 'Item deleted with success.');
         }
+
         return Response::json(['status' => 200], 200);
     }
+
+
+
+
+
+
 
     protected function filePath(): string
     {
