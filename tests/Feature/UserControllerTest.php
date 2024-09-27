@@ -12,12 +12,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
+use Tests\Support\SharedHelperMethods;
 use Log;
 
-class UserControllerTest extends TestCase
+class UserControllerTest extends SharedHelperMethods
 {
     use RefreshDatabase;
     use InteractsWithSession;
+
 
     protected function setUp(): void
     {
@@ -95,60 +97,109 @@ class UserControllerTest extends TestCase
 
 
 
+    /*
+        public function testStoreSuccessfully()
+        {
+            $this->startSession();
+            $this->withoutExceptionHandling();
+            Storage::fake('local'); // Fake the 'local' disk for testing file storage
 
+            // Arrange: Create necessary data
+            $colours = Colour::factory()->count(3)->create();
+            $country = Country::factory()->create();
+
+
+            // Generate a CSRF token
+            $csrfToken = csrf_token();
+
+            // Simulate a file upload for the user's profile picture
+            $profilePicture = UploadedFile::fake()->image('avatar.jpg');
+            $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
+
+            $data = [
+                '_token' => $csrfToken, // Explicitly add CSRF token here
+                'name' => 'Alice Johnson',
+                'email' => 'alice.johnson@example.com',
+                'password' => 'Password@123',
+                'password_confirmation' => 'Password@123', // Use password_confirmation instead of password_confirm
+                'has_kids' => 1,
+                'country_id' => $country->id,
+                'colours_id' => $colours->pluck('id')->toArray(),
+                'picture' => $profilePicture, // UploadedFile instance
+            ];
+
+            // Act: Send a POST request to the store method
+            $response = $this->post('/users', $data);
+
+            // Assert: Check that the response redirects and has the success message
+            $response->assertRedirect('/users');
+            $response->assertSessionHas('success_message', 'Item updated with success.');
+
+            // Assert: Verify the user was created in the database
+            $createdUser = User::where('email', 'alice.johnson@example.com')->first();
+            $this->assertNotNull($createdUser);
+
+            //  dump(Storage::disk('local')->allFiles()); // Should show files in the fake disk
+            //  dump(File::files(storage_path('app/public/storage/testing_users')));
+
+            $this->app->detectEnvironment(fn() => 'testing');
+            // Assert the file was stored in the 'public' disk with the correct custom name
+            Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
+
+            // Assert the picture value in the database matches the expected custom filename
+            $this->assertEquals(Config::get('app.url') . Storage::url('public/users/' . $profilePictureFileName), $createdUser->picture);
+        }
+    */
     public function testStoreSuccessfully()
     {
+        // Start session and prevent exception handling to see full errors
         $this->startSession();
         $this->withoutExceptionHandling();
-        Storage::fake('local'); // Fake the 'local' disk for testing file storage
 
-        // Arrange: Create necessary data
-        $colours = Colour::factory()->count(3)->create();
-        $country = Country::factory()->create();
+        // Fake the 'local' storage to prevent actual file creation
+        Storage::fake('local');
 
+        // Arrange: Use shared helper methods for generating test data
+        $this->authenticateUser();  // Authenticate a user for this request
+        $testData = $this->setupTestData();  // Set up test countries and colors
 
-        // Generate a CSRF token
-        $csrfToken = csrf_token();
-
-        // Simulate a file upload for the user's profile picture
-        $profilePicture = UploadedFile::fake()->image('avatar.jpg');
+        // Use shared helper for CSRF token and profile picture
+        $csrfToken = $this->generateCsrfToken();
+        $profilePicture = $this->fakeProfilePicture();  // Generate a fake profile picture
         $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
 
         $data = [
-            '_token' => $csrfToken, // Explicitly add CSRF token here
+            '_token' => $csrfToken,  // Add CSRF token
             'name' => 'Alice Johnson',
             'email' => 'alice.johnson@example.com',
             'password' => 'Password@123',
-            'password_confirmation' => 'Password@123', // Use password_confirmation instead of password_confirm
+            'password_confirmation' => 'Password@123',
             'has_kids' => 1,
-            'country_id' => $country->id,
-            'colours_id' => $colours->pluck('id')->toArray(),
-            'picture' => $profilePicture, // UploadedFile instance
+            'country_id' => $testData['country']->id,
+            'colours_id' => $testData['colours']->pluck('id')->toArray(),
+            'picture' => $profilePicture,  // Use the fake profile picture
         ];
 
-        // Act: Send a POST request to the store method
+        // Act: Send POST request to store the user
         $response = $this->post('/users', $data);
 
         // Assert: Check that the response redirects and has the success message
         $response->assertRedirect('/users');
-        $response->assertSessionHas('success_message', 'Item updated with success.');
+        $this->assertSuccessMessage($response);  // Use helper to check session message
 
-        // Assert: Verify the user was created in the database
+        // Assert: Verify that the user was created in the database
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
-        //  dump(Storage::disk('local')->allFiles()); // Should show files in the fake disk
-        //  dump(File::files(storage_path('app/public/storage/testing_users')));
-
-        $this->app->detectEnvironment(fn() => 'testing');
-        // Assert the file was stored in the 'public' disk with the correct custom name
+        // Assert: The file was stored in the 'local' disk with the correct custom name
         Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
 
-        // Assert the picture value in the database matches the expected custom filename
-        $this->assertEquals(Config::get('app.url') . Storage::url('public/users/' . $profilePictureFileName), $createdUser->picture);
+        // Assert: The picture value in the database matches the expected custom filename
+        $this->assertEquals(
+            Config::get('app.url') . Storage::url('public/users/' . $profilePictureFileName),
+            $createdUser->picture
+        );
     }
-
-
 
 
     public function testUpdateUserSuccessfully()
@@ -208,60 +259,6 @@ class UserControllerTest extends TestCase
             'country_id' => $country->id,
         ]);
     }
-
-
-
-    /*
-        public function testDeleteUserSuccessfully()
-        {
-            $this->startSession();
-            $this->withoutExceptionHandling();
-
-            // Fake the 'local' disk to prevent real file creation
-            Storage::fake('local');
-
-            // Arrange: Create a user and store their profile picture with a timestamp-based file name
-            $user = User::factory()->create();
-            $profilePictureFileName = time() . '.jpg'; // Use timestamp-based file name
-            $profilePicturePath = 'public/users/' . $profilePictureFileName;
-
-            // Manually store the file in the 'public/users' directory of the fake 'local' disk
-            Storage::disk('local')->put($profilePicturePath, UploadedFile::fake()->image('avatar.jpg'));
-
-            // Log the stored file path for debugging
-            dump('Stored profile picture path:', $profilePicturePath);
-
-            // Update the user's picture field in the database with the relative path
-            $user->update(['picture' => $profilePicturePath]);
-
-            // Ensure the file exists in the fake storage before deletion
-            dump('Before deletion, does file exist? (should be true):', Storage::disk('local')->exists($profilePicturePath));
-            Storage::disk('local')->assertExists($profilePicturePath);
-
-            // Generate a valid CSRF token
-            $csrfToken = csrf_token();
-
-            // Act: Send a DELETE request to the destroy method with CSRF token
-            $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
-
-            // Log the path being checked for deletion
-            dump('Attempting to delete profile picture path:', $profilePicturePath);
-
-            // Log after the delete request
-            dump('After deletion, does file exist? (should be false):', Storage::disk('local')->exists($profilePicturePath));
-
-            // Assert: Verify the response status and session message using the $response object
-            $response->assertStatus(200);
-            $response->assertSessionHas('success_message', 'Item deleted with success.');
-
-            // Assert: The user was deleted from the database
-            $this->assertDatabaseMissing('users', ['id' => $user->id]);
-
-            // Ensure the file was actually deleted from the storage
-            Storage::disk('local')->assertMissing($profilePicturePath);
-        }
-    */
-
 
 
 
