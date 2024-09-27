@@ -152,24 +152,21 @@ class UserControllerTest extends SharedHelperMethods
     */
     public function testStoreSuccessfully()
     {
-        // Start session and prevent exception handling to see full errors
         $this->startSession();
         $this->withoutExceptionHandling();
+        Storage::fake('local'); // Fake the 'local' disk for testing file storage
 
-        // Fake the 'local' storage to prevent actual file creation
-        Storage::fake('local');
+        // Arrange: Create necessary data
+        $this->authenticateUser(); // Authenticate user
+        $testData = $this->setupTestData();
 
-        // Arrange: Use shared helper methods for generating test data
-        $this->authenticateUser();  // Authenticate a user for this request
-        $testData = $this->setupTestData();  // Set up test countries and colors
-
-        // Use shared helper for CSRF token and profile picture
+        // Generate CSRF token and profile picture
         $csrfToken = $this->generateCsrfToken();
-        $profilePicture = $this->fakeProfilePicture();  // Generate a fake profile picture
+        $profilePicture = $this->fakeProfilePicture();
         $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
 
         $data = [
-            '_token' => $csrfToken,  // Add CSRF token
+            '_token' => $csrfToken,
             'name' => 'Alice Johnson',
             'email' => 'alice.johnson@example.com',
             'password' => 'Password@123',
@@ -177,7 +174,7 @@ class UserControllerTest extends SharedHelperMethods
             'has_kids' => 1,
             'country_id' => $testData['country']->id,
             'colours_id' => $testData['colours']->pluck('id')->toArray(),
-            'picture' => $profilePicture,  // Use the fake profile picture
+            'picture' => $profilePicture,
         ];
 
         // Act: Send POST request to store the user
@@ -185,21 +182,24 @@ class UserControllerTest extends SharedHelperMethods
 
         // Assert: Check that the response redirects and has the success message
         $response->assertRedirect('/users');
-        $this->assertSuccessMessage($response);  // Use helper to check session message
+        $this->assertSuccessMessage($response);
 
-        // Assert: Verify that the user was created in the database
+        // Assert: Verify the user was created in the database
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
-        // Assert: The file was stored in the 'local' disk with the correct custom name
+        // Assert the file was stored in the 'public/users' path correctly
         Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
 
-        // Assert: The picture value in the database matches the expected custom filename
+        // Assert the picture value in the database matches the expected custom filename
         $this->assertEquals(
-            Config::get('app.url') . Storage::url('public/users/' . $profilePictureFileName),
+            Config::get('app.url') . '/storage/users/' . $profilePictureFileName,
             $createdUser->picture
         );
+
     }
+
+
 
 
     public function testUpdateUserSuccessfully()
