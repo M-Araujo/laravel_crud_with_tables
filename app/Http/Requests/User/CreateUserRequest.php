@@ -24,7 +24,7 @@ class CreateUserRequest extends FormRequest
     {
         return [
             'name' => 'required|max:255|string',
-            'email' => 'required|email|max:255',
+            'email' => 'required|email|unique:users,email',
             'picture' => 'sometimes|image|mimes:jpeg,jpg,png|required|max:10000',
             'has_kids' => 'required|boolean',
             'country_id' => 'integer|required|exists:countries,id',
@@ -42,5 +42,6 @@ class CreateUserRequest extends FormRequest
             ],
             'password_confirmation' => 'required|same:password'
         ];
+
     }
 }

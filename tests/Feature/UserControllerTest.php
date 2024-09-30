@@ -106,7 +106,7 @@ class UserControllerTest extends SharedHelperMethods
         $response = $this->post('/users', $data);
 
         $response->assertRedirect('/users');
-        $response->assertSessionHas('success_message', 'Item updated with success.');
+        $response->assertSessionHas('success_message', 'Item created successfully.');
 
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
@@ -181,6 +181,36 @@ class UserControllerTest extends SharedHelperMethods
 
         $storageDiskMock->shouldHaveReceived('delete')->with($profilePicturePath)->once();
     }
+
+
+    /*
+    public function testStoreFailsWithValidationErrors()
+    {
+        // Start session and prevent exception handling to see the full error
+        $this->startSession();
+        $this->withoutExceptionHandling();
+
+        // Act: Submit invalid data
+        $response = $this->post('/users', [
+            'name' => '',  // Invalid, should trigger validation error
+            'email' => 'not-an-email',  // Invalid email format
+            'password' => 'short',  // Too short password
+        ]);
+
+        // Assert: Check that the session contains validation errors
+        $response->assertSessionHasErrors(['name', 'email', 'password']);
+
+        // Optional: Check if the session has an error message
+        $response->assertSessionHas('error_message', 'Oops, something is wrong.');
+
+        // Assert: The user should not be created in the database
+        $this->assertDatabaseMissing('users', ['email' => 'not-an-email']);
+    }
+
+*/
+
+
+
 
     protected function tearDown(): void
     {

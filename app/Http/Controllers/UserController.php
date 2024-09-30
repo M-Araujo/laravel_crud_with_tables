@@ -51,6 +51,7 @@ class UserController extends Controller
         return view('users.edit')->with(compact('item', 'colours', 'countries'));
     }
 
+    /*
     public function store(Request $request)
     {
 
@@ -81,6 +82,41 @@ class UserController extends Controller
             return redirect()->back()->withInput();
         }
     }
+
+    */
+
+
+    public function store(Request $request)
+    {
+
+        $validator = Validator::make($request->all(), $this->createValidatorRequest()->rules());
+
+        if ($validator->fails()) {
+            Session::put('error_message', 'Oops, something is wrong.');
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $data = $request->only(['name', 'email', 'password', 'has_kids', 'country_id', 'colours_id']);
+        DB::beginTransaction();
+
+        try {
+            $item = User::create($data);
+            $this->insertOrUpdateColours($request->input('colours_id'), $item);
+            $this->insertOrUpdateCountry($request->input('country_id'), $item);
+            $this->insertOrUpdateImages($request, $item, $old_images = []);
+
+            DB::commit();
+
+            Session::put('success_message', 'Item created successfully.');
+            return redirect('/users');
+        } catch (Exception $e) {
+            DB::rollback();
+
+            Session::put('error_message', 'Oops, something is wrong.');
+            return redirect()->back()->withInput();
+        }
+    }
+
 
     protected function createValidatorRequest(): CreateUserRequest
     {
@@ -215,11 +251,6 @@ class UserController extends Controller
 
         return Response::json(['status' => 200], 200);
     }
-
-
-
-
-
 
 
     protected function filePath(): string
