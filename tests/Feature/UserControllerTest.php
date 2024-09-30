@@ -4,17 +4,17 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\Concerns\InteractsWithSession;
-use Tests\TestCase;
 use App\Models\User;
 use App\Models\Colour;
 use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
+use Tests\Support\SharedHelperMethods;
 use Mockery;
 use Log;
 
-class UserControllerTest extends TestCase
+class UserControllerTest extends SharedHelperMethods
 {
     use RefreshDatabase;
     use InteractsWithSession;
@@ -34,16 +34,6 @@ class UserControllerTest extends TestCase
         return csrf_token();
     }
 
-    protected function fakeProfilePicture(): UploadedFile
-    {
-        return UploadedFile::fake()->image('avatar.jpg');
-    }
-
-    protected function authenticateUser()
-    {
-        $user = User::factory()->create();
-        $this->actingAs($user);
-    }
 
     public function testIndexDisplaysUserList()
     {
@@ -87,17 +77,19 @@ class UserControllerTest extends TestCase
 
     public function testStoreSuccessfully()
     {
-        $this->withoutExceptionHandling();
+        $formData = $this->generateProfilePictureAndCsrfToken();
+
+        $csrfToken = $formData['csrf_token'];
+        $profilePicture = $formData['profile_picture'];
+
         Storage::fake('local');
 
         $this->authenticateUser();
-        $csrfToken = $this->generateCsrfToken();
-        $profilePicture = $this->fakeProfilePicture();
-        $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
-
 
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
+
+        $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
 
         $data = [
             '_token' => $csrfToken,
@@ -114,7 +106,7 @@ class UserControllerTest extends TestCase
         $response = $this->post('/users', $data);
 
         $response->assertRedirect('/users');
-        $response->assertSessionHas('success_message');
+        $response->assertSessionHas('success_message', 'Item updated with success.');
 
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
@@ -123,6 +115,7 @@ class UserControllerTest extends TestCase
 
         $this->assertEquals(Config::get('app.url') . '/storage/users/' . $profilePictureFileName, $createdUser->picture);
     }
+
 
     public function testUpdateUserSuccessfully()
     {

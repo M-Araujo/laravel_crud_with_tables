@@ -1,11 +1,10 @@
 <?php
 
-namespace Tests\Support; // Or use Tests\Feature, depending on where you place it
+namespace Tests\Support;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Mockery;
 use App\Models\User;
@@ -14,21 +13,19 @@ abstract class SharedHelperMethods extends \Tests\TestCase
 {
     use RefreshDatabase;
 
-    // Helper for generating CSRF token
     protected function generateCsrfToken(): string
     {
         $this->startSession();
         return csrf_token();
     }
 
-    // Helper to authenticate a user
+
     protected function authenticateUser($user = null): void
     {
-        $user = $user ?? \App\Models\User::factory()->create();
+        $user = $user ?? User::factory()->create();
         $this->actingAs($user);
     }
 
-    // Setup test data for colours and countries
     protected function setupTestData()
     {
         $colours = \App\Models\Colour::factory()->count(5)->create();
@@ -36,27 +33,21 @@ abstract class SharedHelperMethods extends \Tests\TestCase
         return compact('colours', 'country');
     }
 
-    // Fake profile picture for user
-    protected function fakeProfilePicture(): UploadedFile
+
+    protected function fakeProfilePicture(string $fileName = 'avatar.jpg'): UploadedFile
     {
-        return UploadedFile::fake()->image('avatar.jpg');
+        return UploadedFile::fake()->image($fileName);
     }
 
-    // Assert success message
     protected function assertSuccessMessage($response, $message = 'Item updated with success.')
     {
         $response->assertSessionHas('success_message', $message);
     }
 
-
-
-    // Mock storage disk
-    protected function mockStorageDisk($profilePicturePath)
+    protected function mockStorageDisk($profilePicturePath): Filesystem
     {
-        // Create a mock for the storage disk
         $storageDiskMock = Mockery::mock(Filesystem::class);
 
-        // Define what happens when exists() and delete() are called on the mock
         $storageDiskMock->shouldReceive('exists')
             ->with($profilePicturePath)
             ->andReturn(true);
@@ -73,35 +64,44 @@ abstract class SharedHelperMethods extends \Tests\TestCase
     }
 
 
+    protected function mockDeleteStorageDisk($profilePicturePath): Filesystem
+    {
+        $storageDiskMock = Mockery::mock(Filesystem::class);
 
-    public function testDeleteUserSuccessfully()
+        $storageDiskMock->shouldReceive('exists')
+            ->with($profilePicturePath)
+            ->andReturn(true);
+
+        $storageDiskMock->shouldReceive('delete')
+            ->with($profilePicturePath)
+            ->andReturn(true);
+
+        Storage::shouldReceive('disk')
+            ->with('local')
+            ->andReturn($storageDiskMock);
+
+        return $storageDiskMock;
+    }
+
+    protected function storeFileAndVerify($profilePicturePath, $profilePictureFileName)
+    {
+        Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
+        $this->assertTrue(Storage::disk('local')->exists($profilePicturePath), 'Profile picture was not stored.');
+    }
+
+
+    protected function generateProfilePictureAndCsrfToken(): array
     {
         $this->startSession();
-        $this->withoutExceptionHandling();
 
-        // Mock the storage disk and handle file paths
-        $profilePictureFileName = time() . '.jpg';
-        $profilePicturePath = 'public/users/' . $profilePictureFileName;
-        $storageDiskMock = $this->mockStorageDisk($profilePicturePath);
-
-        // Arrange: Create a user and simulate a stored profile picture
-        $user = User::factory()->create();
-        $user->update(['picture' => $profilePicturePath]);
-
-        // Generate a valid CSRF token
         $csrfToken = csrf_token();
 
-        // Act: Send a DELETE request to the destroy method
-        $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
+        $profilePicture = UploadedFile::fake()->image('avatar.jpg');
 
-        // Assert: Verify the response status and session message using the $response object
-        $response->assertStatus(200);
-        $response->assertSessionHas('success_message', 'Item deleted with success.');
-
-        // Assert: The user was deleted from the database
-        $this->assertDatabaseMissing('users', ['id' => $user->id]);
-
-        // Verify that the delete method was called on the mocked disk
-        $storageDiskMock->shouldHaveReceived('delete')->with($profilePicturePath)->once();
+        return [
+            'csrf_token' => $csrfToken,
+            'profile_picture' => $profilePicture
+        ];
     }
+
 }
