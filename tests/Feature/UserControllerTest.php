@@ -308,13 +308,13 @@ class UserControllerTest extends SharedHelperMethods
     }
 
 
-    /*
     public function testUpdateUserSuccessfullyWithoutChangingPicture()
     {
         $this->withoutExceptionHandling();
         Storage::fake('local');
 
-        $user = User::factory()->create(['picture' => 'public/users/old_avatar.jpg']);
+        $oldPicturePath = 'public/users/old_avatar.jpg';
+        $user = User::factory()->create(['picture' => $oldPicturePath]);
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
 
@@ -337,9 +337,11 @@ class UserControllerTest extends SharedHelperMethods
         $response->assertSessionHas('success_message');
 
         $user->refresh();
-        $this->assertEquals('public/users/old_avatar.jpg', $user->picture);
+
+        $expectedPictureUrl = Config::get('app.url') . '/storage/users/old_avatar.jpg';
+        $this->assertEquals($expectedPictureUrl, $user->picture);
     }
-*/
+
 
     protected function tearDown(): void
     {
