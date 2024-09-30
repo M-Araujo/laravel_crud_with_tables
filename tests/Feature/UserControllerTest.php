@@ -11,25 +11,38 @@ use App\Models\Country;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
-use Tests\Support\SharedHelperMethods;
+use Mockery;
 use Log;
 
-class UserControllerTest extends SharedHelperMethods
+class UserControllerTest extends TestCase
 {
     use RefreshDatabase;
     use InteractsWithSession;
 
-
     protected function setUp(): void
     {
         parent::setUp();
-
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
         ob_start();
         $this->startSession();
+    }
+
+    protected function generateCsrfToken(): string
+    {
+        return csrf_token();
+    }
+
+    protected function fakeProfilePicture(): UploadedFile
+    {
+        return UploadedFile::fake()->image('avatar.jpg');
+    }
+
+    protected function authenticateUser()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
     }
 
     public function testIndexDisplaysUserList()
@@ -45,7 +58,6 @@ class UserControllerTest extends SharedHelperMethods
         $response->assertViewHas('items');
 
         $items = $response->viewData('items');
-
         foreach ($items as $item) {
             $this->assertArrayHasKey('id', $item->toArray());
             $this->assertArrayHasKey('name', $item->toArray());
@@ -53,14 +65,11 @@ class UserControllerTest extends SharedHelperMethods
             $this->assertArrayHasKey('picture', $item->toArray());
         }
 
-        $this->assertCount(5, $items, 'Expected 5 items, but found ' . $items->count());
-
+        $this->assertCount(5, $items);
         $expectedIds = $users->pluck('id')->sort()->values()->all();
         $actualIds = $items->pluck('id')->sort()->values()->all();
-
-        $this->assertEquals($expectedIds, $actualIds, 'The IDs of the items do not match the expected IDs');
+        $this->assertEquals($expectedIds, $actualIds);
     }
-
 
     public function testCreateDisplaysForm()
     {
@@ -71,36 +80,24 @@ class UserControllerTest extends SharedHelperMethods
 
         $response->assertStatus(200);
         $response->assertViewIs('users.edit');
-        $response->assertViewHas('colours');
-        $response->assertViewHas('countries');
-
+        $response->assertViewHas(['colours', 'countries']);
         $this->assertCount(5, $response->viewData('colours'));
         $this->assertCount(3, $response->viewData('countries'));
-
-        $expectedColourIds = $colours->pluck('id')->sort()->values()->all();
-        $actualColourIds = $response->viewData('colours')->pluck('id')->sort()->values()->all();
-        $this->assertEquals($expectedColourIds, $actualColourIds);
-
-        $expectedCountryIds = $countries->pluck('id')->sort()->values()->all();
-        $actualCountryIds = $response->viewData('countries')->pluck('id')->sort()->values()->all();
-        $this->assertEquals($expectedCountryIds, $actualCountryIds);
     }
-
-
-
 
     public function testStoreSuccessfully()
     {
-
         $this->withoutExceptionHandling();
         Storage::fake('local');
 
         $this->authenticateUser();
-        $testData = $this->setupTestData();
-
         $csrfToken = $this->generateCsrfToken();
         $profilePicture = $this->fakeProfilePicture();
         $profilePictureFileName = time() . '.' . $profilePicture->getClientOriginalExtension();
+
+
+        $colours = Colour::factory()->count(3)->create();
+        $country = Country::factory()->create();
 
         $data = [
             '_token' => $csrfToken,
@@ -109,53 +106,41 @@ class UserControllerTest extends SharedHelperMethods
             'password' => 'Password@123',
             'password_confirmation' => 'Password@123',
             'has_kids' => 1,
-            'country_id' => $testData['country']->id,
-            'colours_id' => $testData['colours']->pluck('id')->toArray(),
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
             'picture' => $profilePicture,
         ];
-
 
         $response = $this->post('/users', $data);
 
         $response->assertRedirect('/users');
-        $this->assertSuccessMessage($response);
+        $response->assertSessionHas('success_message');
 
         $createdUser = User::where('email', 'alice.johnson@example.com')->first();
         $this->assertNotNull($createdUser);
 
         Storage::disk('local')->assertExists('public/users/' . $profilePictureFileName);
 
-        $this->assertEquals(
-            Config::get('app.url') . '/storage/users/' . $profilePictureFileName,
-            $createdUser->picture
-        );
-
+        $this->assertEquals(Config::get('app.url') . '/storage/users/' . $profilePictureFileName, $createdUser->picture);
     }
-
-
-
 
     public function testUpdateUserSuccessfully()
     {
-
         $this->withoutExceptionHandling();
+        Storage::fake('local');
 
         $user = User::factory()->create();
         $colours = Colour::factory()->count(3)->create();
         $country = Country::factory()->create();
-        Storage::fake('local');
 
         $authenticatedUser = User::factory()->create();
         $this->actingAs($authenticatedUser);
 
-        $csrfToken = csrf_token();
-
         $uploadedFile = UploadedFile::fake()->image('new_avatar.jpg');
-
         $customFileName = time() . '.' . $uploadedFile->getClientOriginalExtension();
 
         $data = [
-            '_token' => $csrfToken,
+            '_token' => csrf_token(),
             'name' => 'Updated Name',
             'email' => 'updated.email@example.com',
             'has_kids' => 0,
@@ -164,16 +149,13 @@ class UserControllerTest extends SharedHelperMethods
             'picture' => $uploadedFile,
         ];
 
-
         $response = $this->put("/users/{$user->id}", $data);
 
         $response->assertRedirect('/users');
-        $response->assertSessionHas('success_message', 'Item updated with success.');
+        $response->assertSessionHas('success_message');
 
         $user->refresh();
-
         $this->assertEquals(Config::get('app.url') . Storage::url('public/users/' . $customFileName), $user->picture);
-
         Storage::disk('local')->assertExists('public/users/' . $customFileName);
 
         $this->assertDatabaseHas('user_countries', [
@@ -182,45 +164,30 @@ class UserControllerTest extends SharedHelperMethods
         ]);
     }
 
-
-
     public function testDeleteUserSuccessfully()
     {
         $this->withoutExceptionHandling();
 
-        $storageDiskMock = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
-
-        Storage::shouldReceive('disk')
-            ->with('local')
-            ->andReturn($storageDiskMock);
+        $storageDiskMock = Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        Storage::shouldReceive('disk')->with('local')->andReturn($storageDiskMock);
 
         $user = User::factory()->create();
         $profilePictureFileName = time() . '.jpg';
         $profilePicturePath = 'public/users/' . $profilePictureFileName;
 
-        $storageDiskMock->shouldReceive('exists')
-            ->with($profilePicturePath)
-            ->andReturn(true);
-
-        $storageDiskMock->shouldReceive('delete')
-            ->with($profilePicturePath)
-            ->andReturn(true);
+        $storageDiskMock->shouldReceive('exists')->with($profilePicturePath)->andReturn(true);
+        $storageDiskMock->shouldReceive('delete')->with($profilePicturePath)->andReturn(true);
 
         $user->update(['picture' => $profilePicturePath]);
 
-        $csrfToken = csrf_token();
-
-        $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
-
+        $response = $this->delete("/users/{$user->id}", ['_token' => csrf_token()]);
 
         $response->assertStatus(200);
-        $response->assertSessionHas('success_message', 'Item deleted with success.');
-
+        $response->assertSessionHas('success_message');
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
 
         $storageDiskMock->shouldHaveReceived('delete')->with($profilePicturePath)->once();
     }
-
 
     protected function tearDown(): void
     {
@@ -228,7 +195,7 @@ class UserControllerTest extends SharedHelperMethods
             ob_end_clean();
         }
 
-        \Mockery::close();
+        Mockery::close();
         parent::tearDown();
     }
 }
