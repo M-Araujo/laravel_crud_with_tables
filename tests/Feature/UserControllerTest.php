@@ -212,6 +212,7 @@ class UserControllerTest extends SharedHelperMethods
 
         $response = $this->delete("/users/{$user->id}", ['_token' => $csrfToken]);
 
+
         $response->assertStatus(200);
         $response->assertSessionHas('success_message', 'Item deleted with success.');
 
