@@ -29,12 +29,6 @@ class UserControllerTest extends SharedHelperMethods
         $this->startSession();
     }
 
-    protected function generateCsrfToken(): string
-    {
-        return csrf_token();
-    }
-
-
     public function testIndexDisplaysUserList()
     {
         $this->withoutExceptionHandling();
@@ -183,34 +177,169 @@ class UserControllerTest extends SharedHelperMethods
     }
 
 
-    /*
-    public function testStoreFailsWithValidationErrors()
-    {
-        // Start session and prevent exception handling to see the full error
-        $this->startSession();
-        $this->withoutExceptionHandling();
 
-        // Act: Submit invalid data
+    public function testStoreFailsWithMultipleValidationErrors()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
         $response = $this->post('/users', [
-            'name' => '',  // Invalid, should trigger validation error
-            'email' => 'not-an-email',  // Invalid email format
-            'password' => 'short',  // Too short password
+            '_token' => $csrfToken,
+            'name' => '',  // Missing name
+            'email' => 'invalid-email', // Invalid email
+            'password' => 'short', // Password too short
+            'password_confirmation' => 'does-not-match', // Mismatched password confirmation
+
         ]);
 
-        // Assert: Check that the session contains validation errors
-        $response->assertSessionHasErrors(['name', 'email', 'password']);
-
-        // Optional: Check if the session has an error message
-        $response->assertSessionHas('error_message', 'Oops, something is wrong.');
-
-        // Assert: The user should not be created in the database
-        $this->assertDatabaseMissing('users', ['email' => 'not-an-email']);
+        $response->assertSessionHasErrors(['name', 'email', 'password', 'password_confirmation']);
     }
 
+
+    public function testStoreSuccessfullyCreatesUser()
+    {
+        // Start session and generate CSRF token
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        // Dynamically create a country and colours
+        $country = Country::factory()->create(); // Create a country dynamically
+        $colours = Colour::factory()->count(2)->create(); // Create two colours dynamically
+
+        $validData = [
+            '_token' => $csrfToken,
+            'name' => 'Alice Johnson',
+            'email' => 'alice.johnson@example.com',
+            'password' => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'has_kids' => 1,
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
+        ];
+
+        $response = $this->post('/users', $validData);
+
+        $response->assertRedirect('/users');
+        $response->assertSessionHas('success_message', 'Item created successfully.');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'alice.johnson@example.com',
+            'has_kids' => 1,
+        ]);
+
+        $createdUser = User::where('email', 'alice.johnson@example.com')->first();
+
+        $this->assertEquals($country->id, $createdUser->country->country_id);
+        $this->assertCount(2, $createdUser->colours);
+    }
+
+
+    public function testStoreFailsWithDuplicateEmail()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        // Create an existing user
+        $existingUser = User::factory()->create(['email' => 'existing@example.com']);
+
+        $response = $this->post('/users', [
+            '_token' => $csrfToken,
+            'name' => 'New User',
+            'email' => 'existing@example.com', // Duplicate email
+            'password' => 'Password@123',
+            'password_confirmation' => 'Password@123',
+        ]);
+
+        $response->assertSessionHasErrors(['email']); // Assert email validation error
+    }
+
+    public function testStoreFailsWithInvalidImageUpload()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        $country = Country::factory()->create();
+        $colours = Colour::factory()->count(2)->create();
+
+        // Upload an invalid image file (e.g., a text file)
+        $invalidPicture = UploadedFile::fake()->create('document.txt', 100); // Invalid file type
+
+        $response = $this->post('/users', [
+            '_token' => $csrfToken,
+            'name' => 'Alice Johnson',
+            'email' => 'alice.johnson@example.com',
+            'password' => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'has_kids' => 1,
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
+            'picture' => $invalidPicture, // Invalid picture type
+        ]);
+
+        $response->assertSessionHasErrors(['picture']);
+    }
+
+    public function testStoreSuccessfullyWithoutProfilePicture()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        $country = Country::factory()->create();
+        $colours = Colour::factory()->count(2)->create();
+
+        $validData = [
+            '_token' => $csrfToken,
+            'name' => 'Alice Johnson',
+            'email' => 'alice.johnson@example.com',
+            'password' => 'Password@123',
+            'password_confirmation' => 'Password@123',
+            'has_kids' => 1,
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
+            // No 'picture' field here
+        ];
+
+        $response = $this->post('/users', $validData);
+
+        $response->assertRedirect('/users');
+        $response->assertSessionHas('success_message', 'Item created successfully.');
+
+        $this->assertDatabaseHas('users', ['email' => 'alice.johnson@example.com']);
+    }
+
+
+    /*
+    public function testUpdateUserSuccessfullyWithoutChangingPicture()
+    {
+        $this->withoutExceptionHandling();
+        Storage::fake('local');
+
+        $user = User::factory()->create(['picture' => 'public/users/old_avatar.jpg']);
+        $colours = Colour::factory()->count(3)->create();
+        $country = Country::factory()->create();
+
+        $authenticatedUser = User::factory()->create();
+        $this->actingAs($authenticatedUser);
+
+        $data = [
+            '_token' => csrf_token(),
+            'name' => 'Updated Name',
+            'email' => 'updated.email@example.com',
+            'has_kids' => 0,
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
+            // No 'picture' field, keeping the old picture
+        ];
+
+        $response = $this->put("/users/{$user->id}", $data);
+
+        $response->assertRedirect('/users');
+        $response->assertSessionHas('success_message');
+
+        $user->refresh();
+        $this->assertEquals('public/users/old_avatar.jpg', $user->picture);
+    }
 */
-
-
-
 
     protected function tearDown(): void
     {
