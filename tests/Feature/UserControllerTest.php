@@ -343,6 +343,53 @@ class UserControllerTest extends SharedHelperMethods
     }
 
 
+
+    public function testStoreFailsWithMissingRequiredFields()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        // Submit the form without required fields like 'name' and 'email'
+        $response = $this->post('/users', [
+            '_token' => $csrfToken,
+            'name' => '',
+            'email' => '',
+            'password' => '', // Missing password
+            'password_confirmation' => '', // Missing confirmation
+            'has_kids' => '',
+            'country_id' => '',
+            'colours_id' => [], // Missing colours
+        ]);
+
+        // Assert that validation errors are returned for the required fields
+        $response->assertSessionHasErrors(['name', 'email', 'password', 'password_confirmation', 'has_kids', 'country_id', 'colours_id']);
+    }
+
+
+    public function testStoreFailsWithInvalidData()
+    {
+        $this->startSession();
+        $csrfToken = csrf_token();
+
+        $country = Country::factory()->create();
+        $colours = Colour::factory()->count(2)->create();
+
+        $response = $this->post('/users', [
+            '_token' => $csrfToken,
+            'name' => 'Alice Johnson',
+            'email' => 'invalid-email', // Invalid email format
+            'password' => 'short', // Invalid password length
+            'password_confirmation' => 'short',
+            'has_kids' => 1,
+            'country_id' => $country->id,
+            'colours_id' => $colours->pluck('id')->toArray(),
+        ]);
+
+        // Assert the validation error messages
+        $response->assertSessionHasErrors(['email', 'password']);
+    }
+
+
     protected function tearDown(): void
     {
         if (ob_get_length()) {
